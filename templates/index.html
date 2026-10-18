@@ -1,0 +1,1542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Myanmar Checkers AI Visualizer • Adversarial Search & Analytics</title>
+    <!-- Google Fonts & Material Symbols -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --primary-light: #eff6ff;
+            --primary-border: #bfdbfe;
+            --surface: #ffffff;
+            --surface-variant: #f8fafc;
+            --surface-subtle: #f1f5f9;
+            --bg: #f1f5f9;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --border-strong: #cbd5e1;
+
+            /* Checkerboard aesthetic */
+            --square-light: #f4ecd8;
+            --square-dark: #b58863;
+            --square-highlight: #7dd3fc;
+            --square-valid: rgba(34, 197, 94, 0.45);
+            --square-capture: rgba(239, 68, 68, 0.55);
+
+            --white-piece: #f8fafc;
+            --white-piece-border: #94a3b8;
+            --white-piece-inner: #e2e8f0;
+            --black-piece: #1e293b;
+            --black-piece-border: #0f172a;
+            --black-piece-inner: #334155;
+
+            --crown-gold: #fbbf24;
+
+            --win-color: #16a34a;
+            --win-bg: #f0fdf4;
+            --draw-color: #d97706;
+            --draw-bg: #fffbeb;
+            --loss-color: #dc2626;
+            --loss-bg: #fef2f2;
+
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+            --shadow-board: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.2);
+
+            --radius-xs: 6px;
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --radius-full: 9999px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            height: 100vh;
+            overflow-x: hidden;
+            background-color: var(--bg);
+            color: var(--text-main);
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .material-symbols-outlined {
+            font-size: 18px;
+            vertical-align: middle;
+        }
+
+        /* Top Header */
+        .app-header {
+            height: 52px;
+            min-height: 52px;
+            padding: 0 20px;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            z-index: 10;
+        }
+
+        .header-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: var(--radius-sm);
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 16px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .brand-text h1 {
+            font-size: 1.05rem;
+            font-weight: 800;
+            color: var(--text-main);
+            line-height: 1.2;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .brand-text .burmese-tag {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #d97706;
+            background: #fef3c7;
+            padding: 1px 6px;
+            border-radius: var(--radius-xs);
+        }
+
+        .brand-text span {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .header-meta {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .student-pill {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--surface-subtle);
+            border: 1px solid var(--border);
+            padding: 4px 10px;
+            border-radius: var(--radius-full);
+            font-size: 0.76rem;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .student-pill .badge {
+            background: var(--primary);
+            color: white;
+            padding: 1px 6px;
+            border-radius: var(--radius-full);
+            font-size: 0.7rem;
+            font-weight: 700;
+        }
+
+        /* Layout */
+        .main-container {
+            flex: 1;
+            display: flex;
+            gap: 20px;
+            padding: 16px 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+            height: calc(100vh - 52px);
+            overflow: hidden;
+        }
+
+        /* Left Column: Board & Primary Controls */
+        .board-column {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-width: 480px;
+        }
+
+        .board-card {
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            padding: 16px;
+            box-shadow: var(--shadow-board);
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+
+        /* Status Header */
+        .status-banner {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 12px;
+            background: var(--surface-subtle);
+            border-radius: var(--radius-md);
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .player-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .piece-dot {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            display: inline-block;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .piece-dot.white {
+            background: var(--white-piece);
+            border: 2px solid var(--white-piece-border);
+        }
+
+        .piece-dot.black {
+            background: var(--black-piece);
+            border: 2px solid var(--black-piece-border);
+        }
+
+        .score-pill {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.76rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            padding: 2px 8px;
+            border-radius: var(--radius-sm);
+        }
+
+        /* Checkers 8x8 Board & Coordinate Frame */
+        .board-frame {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            user-select: none;
+        }
+
+        .board-coords-col {
+            display: grid;
+            grid-template-columns: 24px repeat(8, 1fr);
+            width: 484px;
+            padding-bottom: 6px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.76rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-align: center;
+        }
+
+        .board-row-container {
+            display: flex;
+            align-items: center;
+        }
+
+        .board-coords-row {
+            display: grid;
+            grid-template-rows: repeat(8, 1fr);
+            height: 460px;
+            width: 24px;
+            padding-right: 6px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.76rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            align-items: center;
+            text-align: right;
+        }
+
+        .checkers-board {
+            width: 460px;
+            height: 460px;
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            grid-template-rows: repeat(8, 1fr);
+            border: 8px solid #5c3a21;
+            border-radius: var(--radius-sm);
+            box-shadow: inset 0 2px 8px rgba(0,0,0,0.4);
+            user-select: none;
+            position: relative;
+        }
+
+        .square {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: default;
+            transition: background-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .square-coord {
+            position: absolute;
+            top: 2px;
+            left: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 8px;
+            font-weight: 600;
+            opacity: 0.38;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .square.dark .square-coord {
+            color: #ffffff;
+        }
+
+        .square.light .square-coord {
+            color: #000000;
+        }
+
+        .square.light {
+            background-color: var(--square-light);
+        }
+
+        .square.dark {
+            background-color: var(--square-dark);
+            cursor: pointer;
+        }
+
+        .square.selected {
+            background-color: var(--square-highlight) !important;
+        }
+
+        .square.valid-target {
+            background-color: var(--square-valid) !important;
+        }
+
+        .square.valid-target::after {
+            content: '';
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: rgba(22, 163, 74, 0.85);
+            box-shadow: 0 0 8px rgba(34, 197, 94, 0.8);
+            position: absolute;
+        }
+
+        .square.capture-target {
+            background-color: var(--square-capture) !important;
+        }
+
+        .square.capture-target::after {
+            content: '';
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            border: 3px solid #ef4444;
+            box-shadow: 0 0 10px rgba(239, 68, 68, 0.8);
+            position: absolute;
+            animation: pulse-ring 1.2s infinite;
+        }
+
+        .square.ai-moved-from {
+            background-color: rgba(245, 158, 11, 0.35) !important;
+            transition: background-color 0.45s ease;
+        }
+
+        .square.ai-moved-to {
+            background-color: rgba(59, 130, 246, 0.38) !important;
+            box-shadow: inset 0 0 0 2px #2563eb;
+            transition: background-color 0.45s ease, box-shadow 0.45s ease;
+        }
+
+        @keyframes pulse-ring {
+            0% { transform: scale(0.9); opacity: 0.8; }
+            50% { transform: scale(1.15); opacity: 1; }
+            100% { transform: scale(0.9); opacity: 0.8; }
+        }
+
+        /* Checkers Pieces */
+        .piece {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+            cursor: pointer;
+            z-index: 2;
+        }
+
+        .piece:hover {
+            transform: scale(1.08);
+        }
+
+        .piece.white {
+            background: radial-gradient(circle at 35% 35%, #ffffff 0%, #e2e8f0 70%, #cbd5e1 100%);
+            border: 3px solid #94a3b8;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3), inset 0 2px 3px rgba(255, 255, 255, 0.8);
+        }
+
+        .piece.black {
+            background: radial-gradient(circle at 35% 35%, #475569 0%, #1e293b 70%, #0f172a 100%);
+            border: 3px solid #0f172a;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.4), inset 0 2px 3px rgba(255, 255, 255, 0.2);
+        }
+
+        .piece.king::before {
+            content: '👑';
+            font-size: 20px;
+            filter: drop-shadow(0 2px 2px rgba(0,0,0,0.6));
+        }
+
+        .piece.active-turn {
+            filter: drop-shadow(0 0 6px rgba(37, 99, 235, 0.7));
+        }
+
+        /* Quick Action Controls Under Board */
+        .board-controls {
+            display: flex;
+            gap: 8px;
+            width: 100%;
+            justify-content: center;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 8px 14px;
+            border-radius: var(--radius-sm);
+            font-size: 0.82rem;
+            font-weight: 600;
+            border: 1px solid var(--border);
+            background: var(--surface);
+            color: var(--text-main);
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .btn:hover {
+            background: var(--surface-subtle);
+            border-color: var(--border-strong);
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary-hover);
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-hover);
+            color: white;
+        }
+
+        /* Right Column: Analytics, Difficulty, Controls & Rules */
+        .sidebar-column {
+            flex: 1.1;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            overflow-y: scroll;
+            scrollbar-gutter: stable;
+            padding-right: 6px;
+        }
+
+        .panel-card {
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            padding: 14px 16px;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-card);
+            flex-shrink: 0;
+        }
+
+        .panel-title {
+            font-size: 0.88rem;
+            font-weight: 700;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .panel-title .badge {
+            font-size: 0.68rem;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: var(--radius-full);
+            background: var(--primary-light);
+            color: var(--primary);
+            border: 1px solid var(--primary-border);
+        }
+
+        /* Mode & Difficulty Selector */
+        .control-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .option-btn {
+            padding: 8px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+            background: var(--surface-subtle);
+            color: var(--text-main);
+            font-size: 0.78rem;
+            font-weight: 600;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .option-btn.active {
+            background: var(--primary-light);
+            border-color: var(--primary);
+            color: var(--primary);
+            font-weight: 700;
+            box-shadow: inset 0 0 0 1px var(--primary);
+        }
+
+        /* AI Adversarial Search Metrics */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .metric-box {
+            background: var(--surface-subtle);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 8px 6px;
+            text-align: center;
+            min-height: 52px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .metric-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--text-main);
+            line-height: 1.2;
+        }
+
+        .metric-label {
+            font-size: 0.68rem;
+            color: var(--text-muted);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            margin-top: 4px;
+        }
+
+        /* Position Evaluation Advantage Bar */
+        .advantage-wrapper {
+            margin-bottom: 14px;
+        }
+
+        .advantage-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.72rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+
+        .advantage-bar {
+            height: 10px;
+            background: #cbd5e1;
+            border-radius: var(--radius-full);
+            overflow: hidden;
+            display: flex;
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
+        }
+
+        .adv-fill-white {
+            background: #2563eb;
+            height: 100%;
+            transition: width 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+            width: 50%;
+        }
+
+        .adv-fill-black {
+            background: #0f172a;
+            height: 100%;
+            transition: width 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+            width: 50%;
+        }
+
+        /* Candidate Moves Table Tabs */
+        .table-tab-container {
+            display: flex;
+            gap: 4px;
+            margin-top: 10px;
+            background: var(--surface-subtle);
+            padding: 3px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+            box-sizing: border-box;
+        }
+
+        .table-tab-btn {
+            flex: 1;
+            padding: 6px 8px;
+            font-size: 0.74rem;
+            font-weight: 700;
+            border: 1px solid transparent;
+            border-radius: var(--radius-xs);
+            background: transparent;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+            text-align: center;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        .table-tab-btn:hover {
+            color: var(--text-main);
+        }
+
+        .table-tab-btn.active {
+            background: var(--surface);
+            color: var(--primary);
+            border-color: var(--border);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+        }
+
+        /* Candidate Moves Table */
+        .candidate-table-container {
+            height: 160px;
+            min-height: 160px;
+            max-height: 160px;
+            overflow-y: auto;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            background: var(--surface);
+        }
+
+        .candidate-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.74rem;
+            table-layout: fixed;
+        }
+
+        .candidate-table th {
+            background: var(--surface-subtle);
+            padding: 6px 8px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--text-muted);
+            position: sticky;
+            top: 0;
+            border-bottom: 1px solid var(--border);
+            z-index: 1;
+        }
+
+        .candidate-table th:nth-child(1),
+        .candidate-table td:nth-child(1) {
+            width: 50%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .candidate-table th:nth-child(2),
+        .candidate-table td:nth-child(2) {
+            width: 22%;
+            text-align: center;
+        }
+
+        .candidate-table th:nth-child(3),
+        .candidate-table td:nth-child(3) {
+            width: 28%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .candidate-table td {
+            padding: 6px 8px;
+            border-bottom: 1px solid var(--border);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        @keyframes tableRowFade {
+            from {
+                opacity: 0;
+                transform: translateY(3px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .candidate-table tbody tr {
+            animation: tableRowFade 0.28s ease-out forwards;
+            transition: background-color 0.25s ease;
+        }
+
+        .badge-win { color: var(--win-color); font-weight: 700; }
+        .badge-loss { color: var(--loss-color); font-weight: 700; }
+        .badge-even { color: var(--text-muted); }
+
+        /* Myanmar Rules Accordion */
+        .rules-card {
+            background: #fffbeb;
+            border: 1px solid #fde68a;
+            border-radius: var(--radius-md);
+            padding: 12px;
+            font-size: 0.78rem;
+            line-height: 1.5;
+            color: #92400e;
+            flex-shrink: 0;
+        }
+
+        .rules-card h3 {
+            font-size: 0.84rem;
+            font-weight: 700;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .rules-card ul {
+            padding-left: 18px;
+            margin-top: 4px;
+        }
+
+        .rules-card li {
+            margin-bottom: 4px;
+        }
+
+        /* Simulation Modal / Container */
+        .sim-results {
+            background: var(--surface-subtle);
+            border-radius: var(--radius-sm);
+            padding: 8px 10px;
+            margin-top: 10px;
+            display: block;
+            border: 1px solid var(--border);
+            font-size: 0.76rem;
+            min-height: 48px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- App Header -->
+    <header class="app-header">
+        <div class="header-brand">
+            <div class="brand-icon">🇲🇲</div>
+            <div class="brand-text">
+                <h1>Myanmar Checkers AI <span class="burmese-tag">မြန်မာကျားကွက်</span></h1>
+                <span>Adversarial Search • Minimax & Alpha-Beta Pruning</span>
+            </div>
+        </div>
+
+        <div class="header-meta">
+            <div class="student-pill">
+                <span>Thein Kyaw Lwin</span>
+                <span class="badge">MMDT010</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="main-container">
+        
+        <!-- Left: Interactive Checkers Board -->
+        <section class="board-column">
+            <div class="board-card">
+                <!-- Status Banner -->
+                <div class="status-banner" id="status-banner">
+                    <div class="player-indicator">
+                        <span class="piece-dot white" id="turn-dot"></span>
+                        <span id="turn-text">White's Turn (You)</span>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <span class="score-pill" id="white-piece-count">White: 12</span>
+                        <span class="score-pill" id="black-piece-count">Black: 12</span>
+                    </div>
+                </div>
+
+                <!-- 8x8 Board with Coordinates -->
+                <div class="board-frame">
+                    <div class="board-coords-col">
+                        <span></span>
+                        <span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span>
+                    </div>
+                    <div class="board-row-container">
+                        <div class="board-coords-row">
+                            <span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span>
+                        </div>
+                        <div class="checkers-board" id="board-grid"></div>
+                    </div>
+                </div>
+
+                <!-- Quick Action Buttons -->
+                <div class="board-controls">
+                    <button class="btn btn-primary" id="btn-new-game">
+                        <span class="material-symbols-outlined">restart_alt</span>
+                        New Game
+                    </button>
+                    <button class="btn" id="btn-ai-hint">
+                        <span class="material-symbols-outlined">lightbulb</span>
+                        AI Move Hint
+                    </button>
+                    <button class="btn" id="btn-eval-board">
+                        <span class="material-symbols-outlined">analytics</span>
+                        Analyze Position
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Right: Settings, Analytics & Rules -->
+        <aside class="sidebar-column">
+            
+            <!-- AI Opponent & Game Settings -->
+            <div class="panel-card">
+                <div class="panel-title">
+                    <span>AI Opponent Strategy</span>
+                    <span class="badge" id="strategy-badge">Minimax (Hard)</span>
+                </div>
+                <div class="control-grid">
+                    <button class="option-btn" data-diff="easy">
+                        🟢 Easy<br><small>(Random)</small>
+                    </button>
+                    <button class="option-btn" data-diff="medium">
+                        🟡 Medium<br><small>(Heuristic)</small>
+                    </button>
+                    <button class="option-btn active" data-diff="hard">
+                        🔴 Hard<br><small>(Minimax α-β)</small>
+                    </button>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+                    <label style="font-size: 0.78rem; font-weight: 600; color: var(--text-muted);">
+                        Search Depth (plies):
+                    </label>
+                    <select id="search-depth-select" style="padding: 4px 8px; border-radius: var(--radius-xs); border: 1px solid var(--border); font-size: 0.78rem; font-weight: 600;">
+                        <option value="2">Depth 2 (Fastest)</option>
+                        <option value="3">Depth 3 (Balanced)</option>
+                        <option value="4" selected>Depth 4 (Strong)</option>
+                        <option value="5">Depth 5 (Deep Search)</option>
+                    </select>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
+                    <label style="font-size: 0.78rem; font-weight: 600; color: var(--text-muted);">
+                        Alpha-Beta Pruning:
+                    </label>
+                    <input type="checkbox" id="alpha-beta-toggle" checked style="width: 16px; height: 16px; cursor: pointer;">
+                </div>
+            </div>
+
+            <!-- Adversarial Search Metrics -->
+            <div class="panel-card">
+                <div class="panel-title">
+                    <span>Adversarial Search Analytics</span>
+                    <span class="badge">Live Minimax</span>
+                </div>
+
+                <!-- Advantage Bar -->
+                <div class="advantage-wrapper">
+                    <div class="advantage-labels">
+                        <span id="white-adv-label">White: 50%</span>
+                        <span id="eval-score-text">Score: 0.0</span>
+                        <span id="black-adv-label">Black: 50%</span>
+                    </div>
+                    <div class="advantage-bar">
+                        <div class="adv-fill-white" id="adv-fill-w"></div>
+                        <div class="adv-fill-black" id="adv-fill-b"></div>
+                    </div>
+                </div>
+
+                <div class="metrics-grid">
+                    <div class="metric-box">
+                        <div class="metric-value" id="metric-nodes">0</div>
+                        <div class="metric-label">Nodes Explored</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-value" id="metric-time">0 ms</div>
+                        <div class="metric-label">Compute Time</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-value" id="metric-moves">0</div>
+                        <div class="metric-label">Legal Moves</div>
+                    </div>
+                </div>
+
+                <!-- Candidate Moves Table with Dual Tabs -->
+                <div class="table-tab-container">
+                    <button id="tab-your-moves" class="table-tab-btn active" type="button">
+                        👤 Your Moves (White)
+                    </button>
+                    <button id="tab-ai-moves" class="table-tab-btn" type="button">
+                        🤖 AI Decision (Black)
+                    </button>
+                </div>
+
+                <div class="panel-title" style="margin-top: 6px; margin-bottom: 2px;">
+                    <span style="font-size: 0.8rem; font-weight: 700;" id="table-title">White's Legal Move Options</span>
+                    <span class="badge" id="table-owner-badge" style="background:#e0f2fe; color:#0369a1; border-color:#bae6fd;">You (White)</span>
+                </div>
+                <div style="font-size: 0.68rem; color: var(--text-muted); margin-bottom: 6px;" id="table-subtitle">
+                    💡 Minimax scores from White's perspective. Higher score = Best for you.
+                </div>
+                <div class="candidate-table-container">
+                    <table class="candidate-table">
+                        <thead>
+                            <tr>
+                                <th>Move</th>
+                                <th>Minimax Score</th>
+                                <th>Tactical Assessment</th>
+                            </tr>
+                        </thead>
+                        <tbody id="candidate-tbody">
+                            <tr>
+                                <td colspan="3" style="text-align: center; color: var(--text-muted); padding: 12px;">
+                                    Start playing to observe Minimax decision branching.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Bot vs Bot Benchmark Simulation -->
+            <div class="panel-card">
+                <div class="panel-title">
+                    <span>Automated Simulation Benchmark</span>
+                    <span class="badge">Bot vs Bot</span>
+                </div>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <select id="sim-agent1" style="flex: 1; padding: 6px; font-size: 0.76rem; border-radius: var(--radius-xs); border: 1px solid var(--border);">
+                        <option value="minimax" selected>Minimax (White)</option>
+                        <option value="heuristic">Heuristic (White)</option>
+                        <option value="random">Random (White)</option>
+                    </select>
+                    <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted);">VS</span>
+                    <select id="sim-agent2" style="flex: 1; padding: 6px; font-size: 0.76rem; border-radius: var(--radius-xs); border: 1px solid var(--border);">
+                        <option value="heuristic" selected>Heuristic (Black)</option>
+                        <option value="random">Random (Black)</option>
+                        <option value="minimax">Minimax (Black)</option>
+                    </select>
+                    <button class="btn btn-primary" id="btn-run-sim" style="padding: 6px 12px; font-size: 0.76rem;">
+                        Run
+                    </button>
+                </div>
+                <div class="sim-results" id="sim-results-box">
+                    <div style="display: flex; justify-content: space-between; font-weight: 700; margin-bottom: 6px;">
+                        <span id="sim-p1-res">P1 Wins: 0</span>
+                        <span id="sim-draw-res">Draws: 0</span>
+                        <span id="sim-p2-res">P2 Wins: 0</span>
+                    </div>
+                    <div style="font-size: 0.72rem; color: var(--text-muted);" id="sim-time-res">
+                        Select bot strategies and click Run to benchmark.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Myanmar Checkers Rules Summary -->
+            <div class="rules-card">
+                <h3>🇲🇲 Traditional Myanmar Checkers (မြန်မာကျားကွက်) Rules</h3>
+                <ul>
+                    <li><strong>ဘုတ်ပြားဖွဲ့စည်းပုံ:</strong> ၈x၈ အကွက် ၃၂ ကွက်ပေါ်တွင် ၁၂ ကောင်စီဖြင့် ကစားရသည်။</li>
+                    <li><strong>ကျားငယ် (Regular Men):</strong> အရှေ့ထောင့်ဖြတ် ၁ ကွက်သာ တက်ခွင့်နှင့် စားခွင့်ရှိသည်။ အနောက်သို့ လုံးဝပြန်မစားရပါ။</li>
+                    <li><strong>မစားမနေရ (Compulsory Capture):</strong> စားကွက်ရှိပါက မဖြစ်မနေ စားရမည်။</li>
+                    <li><strong>အများဆုံးစားရမည့် စည်းမျဉ်း (Longest Line):</strong> စားကွက်အများအပြားရှိပါက အကောင်ရေ အများဆုံးစားနိုင်သော လမ်းကြောင်းကိုသာ ရွေးချယ်ရမည်။</li>
+                    <li><strong>ကျားကြီး / ဒမ် (Flying King):</strong> တဖက်စွန်းရောက်ပါက ကျားကြီးဖြစ်ပြီး ထောင့်ဖြတ် ၄ ဘက်စလုံး အကွာအဝေးမရွေး ပြေးနိုင်၊ စားနိုင်သည်။</li>
+                </ul>
+            </div>
+
+        </aside>
+
+    </main>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        // State variables
+        let gameState = {
+            board: null,
+            current_player: 'W',
+            legal_moves: [],
+            is_game_over: false,
+            winner: null,
+            white_count: 12,
+            black_count: 12,
+            white_kings: 0,
+            black_kings: 0
+        };
+
+        let humanPlayer = 'W';
+        let currentDifficulty = 'hard';
+        let selectedSquare = null;
+        let activeLegalMovesForSelected = [];
+        let isProcessing = false;
+
+        // Dual-tab tracking for candidate moves
+        let activeTab = 'your'; // 'your' or 'ai'
+        let whiteCandidateDetails = null;
+        let aiCandidateDetails = null;
+        let aiChosenKey = null;
+        let whiteMetrics = { nodes: 0, time_ms: 0 };
+        let aiMetrics = { nodes: 0, time_ms: 0 };
+
+        const boardGrid = document.getElementById('board-grid');
+        const turnDot = document.getElementById('turn-dot');
+        const turnText = document.getElementById('turn-text');
+        const whitePieceCount = document.getElementById('white-piece-count');
+        const blackPieceCount = document.getElementById('black-piece-count');
+        const metricNodes = document.getElementById('metric-nodes');
+        const metricTime = document.getElementById('metric-time');
+        const metricMoves = document.getElementById('metric-moves');
+        const candidateTbody = document.getElementById('candidate-tbody');
+        const advFillW = document.getElementById('adv-fill-w');
+        const advFillB = document.getElementById('adv-fill-b');
+        const evalScoreText = document.getElementById('eval-score-text');
+        const whiteAdvLabel = document.getElementById('white-adv-label');
+        const blackAdvLabel = document.getElementById('black-adv-label');
+
+        // Initialize Board DOM
+        function createBoardDOM() {
+            boardGrid.innerHTML = '';
+            for (let r = 0; r < 8; r++) {
+                for (let c = 0; c < 8; c++) {
+                    const square = document.createElement('div');
+                    square.classList.add('square');
+                    square.dataset.row = r;
+                    square.dataset.col = c;
+
+                    // Coordinate badge (r,c) in corner
+                    const coord = document.createElement('span');
+                    coord.classList.add('square-coord');
+                    coord.textContent = `${r},${c}`;
+                    square.appendChild(coord);
+
+                    if ((r + c) % 2 === 1) {
+                        square.classList.add('dark');
+                        square.addEventListener('click', () => onSquareClick(r, c));
+                    } else {
+                        square.classList.add('light');
+                    }
+                    boardGrid.appendChild(square);
+                }
+            }
+        }
+
+        // Fetch initial game state
+        async function startNewGame() {
+            try {
+                const response = await fetch('/api/new_game', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ starting_player: 'W' })
+                });
+                const data = await response.json();
+                updateGameState(data);
+                selectedSquare = null;
+                activeLegalMovesForSelected = [];
+                lastAiMove = null;
+                whiteCandidateDetails = null;
+                aiCandidateDetails = null;
+                aiChosenKey = null;
+                whiteMetrics = { nodes: 0, time_ms: 0 };
+                aiMetrics = { nodes: 0, time_ms: 0 };
+                switchTableTab('your');
+                await evaluatePosition();
+            } catch (err) {
+                console.error("Failed to start new game:", err);
+            }
+        }
+
+        let lastAiMove = null;
+
+        function updateGameState(data) {
+            gameState.board = data.board;
+            gameState.current_player = data.current_player;
+            gameState.legal_moves = data.legal_moves || [];
+            gameState.is_game_over = data.is_game_over;
+            gameState.winner = data.winner;
+            gameState.white_count = data.white_count;
+            gameState.black_count = data.black_count;
+            gameState.white_kings = data.white_kings;
+            gameState.black_kings = data.black_kings;
+
+            renderBoard();
+            renderStatus();
+        }
+
+        function renderBoard() {
+            // Clear highlights and previous pieces while preserving coordinate labels
+            document.querySelectorAll('.square').forEach(sq => {
+                sq.classList.remove('selected', 'valid-target', 'capture-target', 'ai-moved-from', 'ai-moved-to');
+                sq.querySelectorAll('.piece').forEach(p => p.remove());
+            });
+
+            // Re-render pieces
+            for (let r = 0; r < 8; r++) {
+                for (let c = 0; c < 8; c++) {
+                    const pieceCode = gameState.board[r][c];
+                    if (pieceCode !== '.') {
+                        const sq = document.querySelector(`.square[data-row="${r}"][data-col="${c}"]`);
+                        if (sq) {
+                            const pieceEl = document.createElement('div');
+                            pieceEl.classList.add('piece');
+                            if (pieceCode.startsWith('W')) {
+                                pieceEl.classList.add('white');
+                            } else {
+                                pieceEl.classList.add('black');
+                            }
+                            if (pieceCode.endsWith('K')) {
+                                pieceEl.classList.add('king');
+                            }
+                            if (gameState.current_player === (pieceCode.startsWith('W') ? 'W' : 'B')) {
+                                pieceEl.classList.add('active-turn');
+                            }
+                            sq.appendChild(pieceEl);
+                        }
+                    }
+                }
+            }
+
+            // Render selection and targets
+            if (selectedSquare) {
+                const selSq = document.querySelector(`.square[data-row="${selectedSquare[0]}"][data-col="${selectedSquare[1]}"]`);
+                if (selSq) selSq.classList.add('selected');
+
+                activeLegalMovesForSelected.forEach(m => {
+                    const toSq = document.querySelector(`.square[data-row="${m.to[0]}"][data-col="${m.to[1]}"]`);
+                    if (toSq) {
+                        if (m.is_capture) {
+                            toSq.classList.add('capture-target');
+                        } else {
+                            toSq.classList.add('valid-target');
+                        }
+                    }
+                });
+            } else if (lastAiMove) {
+                // Highlight only the single latest AI move
+                const fromSq = document.querySelector(`.square[data-row="${lastAiMove.from[0]}"][data-col="${lastAiMove.from[1]}"]`);
+                const toSq = document.querySelector(`.square[data-row="${lastAiMove.to[0]}"][data-col="${lastAiMove.to[1]}"]`);
+                if (fromSq) fromSq.classList.add('ai-moved-from');
+                if (toSq) toSq.classList.add('ai-moved-to');
+            }
+        }
+
+        function renderStatus() {
+            whitePieceCount.textContent = `White: ${gameState.white_count} (${gameState.white_kings} 👑)`;
+            blackPieceCount.textContent = `Black: ${gameState.black_count} (${gameState.black_kings} 👑)`;
+            metricMoves.textContent = gameState.legal_moves.length;
+
+            if (gameState.is_game_over) {
+                if (gameState.winner === 'W') {
+                    turnText.textContent = "🏆 Victory! White Wins!";
+                    turnDot.className = "piece-dot white";
+                } else if (gameState.winner === 'B') {
+                    turnText.textContent = "🤖 Game Over! Black Wins!";
+                    turnDot.className = "piece-dot black";
+                } else {
+                    turnText.textContent = "🤝 Game Drawn (Equilibrium / Stale)";
+                    turnDot.className = "piece-dot";
+                }
+                return;
+            }
+
+            if (gameState.current_player === 'W') {
+                turnDot.className = "piece-dot white";
+                turnText.textContent = humanPlayer === 'W' ? "White's Turn (Your Move)" : "White's Turn (AI)";
+            } else {
+                turnDot.className = "piece-dot black";
+                turnText.textContent = humanPlayer === 'B' ? "Black's Turn (Your Move)" : "Black's Turn (AI Thinking...)";
+            }
+        }
+
+        async function onSquareClick(r, c) {
+            if (isProcessing || gameState.is_game_over) return;
+
+            // Only allow human moves on human's turn
+            if (gameState.current_player !== humanPlayer) return;
+
+            const pieceCode = gameState.board[r][c];
+            const isHumanPiece = (humanPlayer === 'W' && pieceCode.startsWith('W')) ||
+                                 (humanPlayer === 'B' && pieceCode.startsWith('B'));
+
+            // If clicked on own piece: Select it and highlight destinations
+            if (isHumanPiece) {
+                lastAiMove = null; // Clear previous AI highlight when human starts turn
+                selectedSquare = [r, c];
+                activeLegalMovesForSelected = gameState.legal_moves.filter(m => m.from[0] === r && m.from[1] === c);
+                renderBoard();
+                return;
+            }
+
+            // If a piece was selected and user clicked a valid destination square: execute move!
+            if (selectedSquare) {
+                const matchedMove = activeLegalMovesForSelected.find(m => m.to[0] === r && m.to[1] === c);
+                if (matchedMove) {
+                    await executeHumanMove(matchedMove);
+                } else {
+                    // Clicked an empty or invalid square: deselect
+                    selectedSquare = null;
+                    activeLegalMovesForSelected = [];
+                    renderBoard();
+                }
+            }
+        }
+
+        async function executeHumanMove(move) {
+            isProcessing = true;
+            lastAiMove = null; // Clear any old AI highlight
+            selectedSquare = null;
+            activeLegalMovesForSelected = [];
+
+            try {
+                const depth = parseInt(document.getElementById('search-depth-select').value);
+                const useAlphaBeta = document.getElementById('alpha-beta-toggle').checked;
+
+                // Step 1: Execute Human Move on the board first
+                turnDot.className = "piece-dot black";
+                turnText.textContent = "Black's Turn (AI Thinking...) 🤖";
+
+                const humanResponse = await fetch('/api/move', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        board: gameState.board,
+                        current_player: gameState.current_player,
+                        player_move: move,
+                        is_ai_turn: false
+                    })
+                });
+
+                const humanData = await humanResponse.json();
+                updateGameState(humanData);
+
+                if (humanData.is_game_over) {
+                    return;
+                }
+
+                // Step 2: Natural thinking pause (900ms) so human move is visible & calm
+                await new Promise(r => setTimeout(r, 900));
+
+                // Step 3: Request AI move
+                const aiResponse = await fetch('/api/move', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        board: gameState.board,
+                        current_player: gameState.current_player,
+                        difficulty: currentDifficulty,
+                        depth: depth,
+                        use_alpha_beta: useAlphaBeta,
+                        is_ai_turn: true
+                    })
+                });
+
+                const aiData = await aiResponse.json();
+                lastAiMove = aiData.ai_move;
+                updateGameState(aiData);
+
+                // Update search metrics and candidate details from AI's turn
+                aiMetrics = {
+                    nodes: aiData.nodes_explored !== undefined ? aiData.nodes_explored : 0,
+                    time_ms: aiData.eval_time_ms !== undefined ? aiData.eval_time_ms : 0
+                };
+                aiCandidateDetails = aiData.candidate_details || {};
+                aiChosenKey = aiData.ai_move ? `(${aiData.ai_move.from[0]}, ${aiData.ai_move.from[1]}) ➔ (${aiData.ai_move.to[0]}, ${aiData.ai_move.to[1]})` : null;
+
+                // Show AI's decision analysis calmly
+                switchTableTab('ai', true);
+
+                // Update advantage bar from AI's perspective
+                let aiBestScore = 0;
+                if (aiData.candidate_scores && Object.keys(aiData.candidate_scores).length > 0) {
+                    aiBestScore = Math.max(...Object.values(aiData.candidate_scores));
+                }
+                applyAdvantageBar(aiBestScore, false);
+
+                // Precompute White's legal moves in background silently
+                if (!gameState.is_game_over) {
+                    evaluatePosition();
+                }
+            } catch (err) {
+                console.error("Error executing move:", err);
+            } finally {
+                isProcessing = false;
+            }
+        }
+
+        function applyAdvantageBar(score, isWhite = true) {
+            const whiteAdv = isWhite ? score : -score;
+            evalScoreText.textContent = `Advantage: ${whiteAdv >= 0 ? '+' : ''}${whiteAdv.toFixed(0)} (${whiteAdv >= 0 ? 'White' : 'Black'})`;
+            let whitePct = Math.max(10, Math.min(90, 50 + (whiteAdv / 20)));
+            let blackPct = 100 - whitePct;
+            advFillW.style.width = `${whitePct}%`;
+            advFillB.style.width = `${blackPct}%`;
+            whiteAdvLabel.textContent = `White: ${whitePct.toFixed(0)}%`;
+            blackAdvLabel.textContent = `Black: ${blackPct.toFixed(0)}%`;
+        }
+
+        async function evaluatePosition() {
+            try {
+                const depth = parseInt(document.getElementById('search-depth-select').value);
+                const useAlphaBeta = document.getElementById('alpha-beta-toggle').checked;
+
+                const response = await fetch('/api/evaluate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        board: gameState.board,
+                        current_player: gameState.current_player,
+                        depth: depth,
+                        use_alpha_beta: useAlphaBeta
+                    })
+                });
+
+                const data = await response.json();
+                if (data.candidate_details) {
+                    whiteCandidateDetails = data.candidate_details;
+                }
+                if (data.nodes_explored !== undefined) {
+                    whiteMetrics = {
+                        nodes: data.nodes_explored,
+                        time_ms: data.eval_time_ms
+                    };
+                }
+
+                // Only render if user is currently looking at White's tab (avoids jarring mid-view overwrite)
+                if (activeTab === 'your') {
+                    let bestScore = data.static_eval || 0;
+                    if (data.candidate_scores && Object.keys(data.candidate_scores).length > 0) {
+                        bestScore = Math.max(...Object.values(data.candidate_scores));
+                    }
+                    applyAdvantageBar(bestScore, gameState.current_player === 'W');
+                    switchTableTab('your');
+                }
+            } catch (err) {
+                console.error("Error evaluating position:", err);
+            }
+        }
+
+        function switchTableTab(tab, force = false) {
+            const tabYour = document.getElementById('tab-your-moves');
+            const tabAi = document.getElementById('tab-ai-moves');
+
+            // Guard: If already active on this tab and not forced, do nothing (prevents flicker!)
+            if (!force && tab === activeTab) {
+                const targetBtn = tab === 'your' ? tabYour : tabAi;
+                if (targetBtn && targetBtn.classList.contains('active')) return;
+            }
+
+            activeTab = tab;
+            const tableTitle = document.getElementById('table-title');
+            const tableBadge = document.getElementById('table-owner-badge');
+            const tableSub = document.getElementById('table-subtitle');
+
+            if (tab === 'your') {
+                tabYour.classList.add('active');
+                tabAi.classList.remove('active');
+                tableTitle.textContent = "White's Legal Move Options";
+                tableBadge.textContent = "You (White)";
+                tableBadge.style.background = "#e0f2fe";
+                tableBadge.style.color = "#0369a1";
+                tableBadge.style.borderColor = "#bae6fd";
+                tableSub.textContent = "💡 Minimax scores from White's perspective. Higher score = Best for you.";
+
+                if (whiteMetrics.nodes > 0) {
+                    metricNodes.textContent = whiteMetrics.nodes.toLocaleString();
+                    metricTime.textContent = `${whiteMetrics.time_ms} ms`;
+                }
+
+                if (whiteCandidateDetails && Object.keys(whiteCandidateDetails).length > 0) {
+                    const topWhiteScore = Math.max(...Object.values(whiteCandidateDetails).map(x => x.score));
+                    applyAdvantageBar(topWhiteScore, true);
+                    renderCandidateTableRows(whiteCandidateDetails, null);
+                } else {
+                    candidateTbody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:var(--text-muted); padding:10px;">Evaluating White's options...</td></tr>`;
+                }
+            } else {
+                tabAi.classList.add('active');
+                tabYour.classList.remove('active');
+                tableTitle.textContent = "AI's Decision Analysis (Black)";
+                tableBadge.textContent = "AI (Black)";
+                tableBadge.style.background = "#f1f5f9";
+                tableBadge.style.color = "#334155";
+                tableBadge.style.borderColor = "#cbd5e1";
+                tableSub.textContent = "💡 Minimax scores from Black's perspective. AI chooses highest score (⭐).";
+
+                if (aiMetrics.nodes > 0) {
+                    metricNodes.textContent = aiMetrics.nodes.toLocaleString();
+                    metricTime.textContent = `${aiMetrics.time_ms} ms`;
+                }
+
+                if (aiCandidateDetails && Object.keys(aiCandidateDetails).length > 0) {
+                    const topAiScore = Math.max(...Object.values(aiCandidateDetails).map(x => x.score));
+                    applyAdvantageBar(topAiScore, false);
+                    renderCandidateTableRows(aiCandidateDetails, aiChosenKey);
+                } else {
+                    candidateTbody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:var(--text-muted); padding:10px;">Waiting for AI to make a move.</td></tr>`;
+                }
+            }
+        }
+
+        function renderCandidateTableRows(candidates, chosenKey = null) {
+            candidateTbody.innerHTML = '';
+            const keys = Object.keys(candidates);
+            if (keys.length === 0) {
+                candidateTbody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:var(--text-muted); padding:10px;">No candidate moves evaluated.</td></tr>`;
+                return;
+            }
+
+            // Sort moves by score descending
+            keys.sort((a, b) => candidates[b].score - candidates[a].score);
+
+            keys.forEach(k => {
+                const item = candidates[k];
+                const tr = document.createElement('tr');
+                let badgeClass = 'badge-even';
+                if (item.status === 'win' || item.status === 'advantage') badgeClass = 'badge-win';
+                if (item.status === 'loss' || item.status === 'disadvantage') badgeClass = 'badge-loss';
+
+                const isChosen = chosenKey && k.includes(chosenKey);
+                if (isChosen) {
+                    tr.style.background = 'rgba(37, 99, 235, 0.12)';
+                    tr.style.borderLeft = '3px solid #2563eb';
+                }
+
+                tr.innerHTML = `
+                    <td>
+                        <strong>${k}</strong>
+                        ${isChosen ? '<span style="background: #2563eb; color: white; padding: 1px 6px; border-radius: 4px; font-size: 10px; margin-left: 6px; font-weight: 700;">AI CHOSE ⭐</span>' : ''}
+                    </td>
+                    <td class="${badgeClass}">${item.score >= 0 ? '+' : ''}${item.score}</td>
+                    <td>${item.label}</td>
+                `;
+                candidateTbody.appendChild(tr);
+            });
+        }
+
+        // Event Listeners
+        document.getElementById('btn-new-game').addEventListener('click', startNewGame);
+
+        document.getElementById('tab-your-moves').addEventListener('click', () => switchTableTab('your'));
+        document.getElementById('tab-ai-moves').addEventListener('click', () => switchTableTab('ai'));
+
+        document.getElementById('btn-ai-hint').addEventListener('click', async () => {
+            if (isProcessing || gameState.is_game_over) return;
+            switchTableTab('your');
+            evaluatePosition();
+        });
+
+        document.getElementById('btn-eval-board').addEventListener('click', () => {
+            switchTableTab('your');
+            evaluatePosition();
+        });
+
+        // Difficulty options
+        document.querySelectorAll('.option-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.option-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentDifficulty = btn.dataset.diff;
+                const badge = document.getElementById('strategy-badge');
+                if (currentDifficulty === 'easy') badge.textContent = "Random (Easy)";
+                else if (currentDifficulty === 'medium') badge.textContent = "Heuristic (Medium)";
+                else badge.textContent = "Minimax (Hard)";
+            });
+        });
+
+        // Run Simulation Benchmark
+        document.getElementById('btn-run-sim').addEventListener('click', async () => {
+            const btn = document.getElementById('btn-run-sim');
+            const resBox = document.getElementById('sim-results-box');
+            const p1 = document.getElementById('sim-agent1').value;
+            const p2 = document.getElementById('sim-agent2').value;
+
+            btn.disabled = true;
+            btn.textContent = "Running...";
+            resBox.style.display = 'block';
+            resBox.style.opacity = '0.5';
+
+            try {
+                const response = await fetch('/api/simulate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        agent1: p1,
+                        agent2: p2,
+                        num_games: 10,
+                        depth: 3
+                    })
+                });
+                const res = await response.json();
+                document.getElementById('sim-p1-res').textContent = `${res.agent1_type} Wins: ${res.agent1_wins} (${res.agent1_win_pct}%)`;
+                document.getElementById('sim-draw-res').textContent = `Draws: ${res.draws} (${res.draw_pct}%)`;
+                document.getElementById('sim-p2-res').textContent = `${res.agent2_type} Wins: ${res.agent2_wins} (${res.agent2_win_pct}%)`;
+                document.getElementById('sim-time-res').textContent = `10 matches completed in ${res.elapsed_ms} ms.`;
+                resBox.style.opacity = '1';
+            } catch (err) {
+                console.error("Simulation error:", err);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = "Run";
+            }
+        });
+
+        // Boot
+        createBoardDOM();
+        startNewGame();
+    </script>
+</body>
+</html>
+
